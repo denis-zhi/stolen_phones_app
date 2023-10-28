@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+    
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guardián de Gadgets</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <a href="info.html">Más sobre nuestro proyecto</a>
+    </header>
+    <h1>Guardián de Gadgets</h1>
+
+    <section id="user-status" style="display: none;">
+        <p>Bienvenido,, <span id="user-email"></span>! <button id="logout-btn">Logout</button></p>
+    </section>
+
+    <section id="register-login-section">
+        <h2>Iniciar sesión</h2>
+        <label>Correo electrónico: <input type="email" id="login-email"></label>
+        <label>Contraseña: <input type="password" id="login-password"></label>
+        <button id="login-btn">Iniciar sesión</button>
+        
+        <h2>Registrarse</h2>
+        <label>Correo electrónico: <input type="email" id="register-email"></label>
+        <label>Contraseña: <input type="password" id="register-password"></label>
+        <button id="register-btn">Register</button>
+    </section>
+
+    <section id="phone-section" style="display: none;">
+        <h2>Añadir un teléfono robado</h2>
+        <div>
+            <label>Marca: 
+                <select id="phone-brand">
+                    <option value="Samsung">Samsung</option>
+                    <option value="Motorola">Motorola</option>
+                    <option value="Huawei">Huawei</option>
+                    <option value="LG">LG</option>
+                    <option value="Apple">Apple</option>
+                    <option value="Nokia">Nokia</option>
+                    <option value="Alcatel">Alcatel</option>
+                    <option value="Xiaomi">Xiaomi</option>
+                    <option value="Sony">Sony</option>
+                    <option value="ZTE">ZTE</option>
+                    <option value="BLU">BLU</option>
+                    <option value="TCL">TCL</option>
+                    <option value="Oppo">Oppo</option>
+                    <option value="Vivo">Vivo</option>
+                    <option value="Realme">Realme</option>
+                    <option value="Ipro">Ipro</option>
+                    <option value="Panacom">Panacom</option>
+                    <option value="C5l">C5l</option>
+                    <option value="Quantum">Quantum</option>
+                    <option value="Kodak">Kodak</option>
+                </select>
+            </label>
+        </div>
+        <div>
+            <label>Modelo: <input type="text" id="phone-model"></label>
+        </div>
+        <div>
+            <label>IMEI: <input type="text" id="phone-imei"></label>
+        </div>
+        <div>
+            <label>Serial N: <input type="text" id="phone-serial"></label>
+        </div>
+        <div>
+            <label>Fecha del robo: <input type="date" id="phone-theft-date"></label>
+        </div>
+        <button id="add-phone-btn">Añadir teléfono</button>
+    </section>
+
+   
+    <section id="phones-list">
+        <h2>Lista de teléfonos robados</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Brand</th>
+                    <th>Model</th>
+                    <th>IMEI</th>
+                    <th>Serial N</th>
+                    <th>Date of Theft</th>
+                    <th>Status</th>
+                    
+                    
+                </tr>
+            </thead>
+            <tbody id="phones-table-body">
+                <!-- Сюда будут добавлены строки с данными о телефонах -->
+            </tbody>
+        </table>
+    </section>
+
+    <script>
+        function formatDate(dateString) {
+            if (!dateString) return "N/A"; // Если дата отсутствует или пустая
+            try {
+                return new Date(dateString).toISOString().split('T')[0];
+            } catch (error) {
+                console.error("Error formatting date:", dateString, error);
+                return "Invalid Date";
+            }
+        }
+
+        $(document).ready(function() {
+            let token = null;
+            let userEmail = null;
+            let userId = null;
+
+            function loadPhonesList() {
+                $.get("http://localhost:3000/phones", function(data) {
+                    $("#phones-table-body").empty();
+                    data.forEach(phone => {
+                        let formattedDate = formatDate(phone.theftDate);
+                        let row = `<tr>
+                                    <td>${phone.brand}</td>
+                                    <td>${phone.model}</td>
+                                    <td>${phone.IMEI || ''}</td>
+                                    <td>${phone.serialNumber || ''}</td>
+                                    <td>${formattedDate}</td>
+                                    <td>${phone.status || ''}</td>
+                                    <!-- Добавьте другие столбцы по аналогии -->
+                                   </tr>`;
+                        $("#phones-table-body").append(row);
+                    });
+                });
+            }
+
+            
+            loadPhonesList(); // Загрузим список телефонов при загрузке страницы
+
+            $('#login-btn').click(function() {
+                const email = $('#login-email').val();
+                const password = $('#login-password').val();
+                $.post("http://localhost:3000/users/login", { email, password }, function(data) {
+                    if (data.success) {
+                        token = data.token;
+                        userId = data.userId;
+                        userId = data.userId;  // Добавьте эту строку
+                        console.log('UserId:', userId);
+                        userEmail = email;
+                        $('#user-email').text(userEmail);
+                        
+                        $('#register-login-section').hide();
+                        $('#user-status, #phone-section, #user-phones-list').show();  // Добавьте `#user-phones-list`
+            
+                        loadPhonesList();
+                        
+                    } else {
+                        alert('Login failed!');
+                    }
+                });
+            });
+
+
+            
+
+            $('#logout-btn').click(function() {
+                token = null;
+                userEmail = null;
+
+                $('#register-login-section').show();
+                $('#user-status, #phone-section').hide();
+            });
+
+            $('#register-btn').click(function() {
+                const email = $('#register-email').val();
+                const password = $('#register-password').val();
+                $.post("http://localhost:3000/users/register", { email, password }, function(data) {
+                    if (data.success) {
+                        alert('Registration successful! Please login.');
+                    } else {
+                        alert('Registration failed!');
+                    }
+                });
+            });
+
+            $('#add-phone-btn').click(function() {
+                if (!token) {
+                    alert('You need to login first!');
+                    return;
+                }
+
+                const brand = $('#phone-brand').val();
+                const model = $('#phone-model').val();
+                const IMEI = $('#phone-imei').val();
+                const serialNumber = $('#phone-serial').val();
+                const theftDate = $('#phone-theft-date').val();
+                const status = "Not Found";
+                                
+                $.ajax({
+                    url: "http://localhost:3000/phones/add",
+                    method: "POST",
+                    headers: {
+                        Authorization: token
+                    },
+                    data: { userId, brand, model,IMEI, serialNumber, theftDate, status },
+                    success: function(data) {
+                        if (data.success) {
+                            alert('Phone added successfully!');
+                            loadPhonesList();
+                        } else {
+                            alert('Failed to add phone!');
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
